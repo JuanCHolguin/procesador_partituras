@@ -25,7 +25,11 @@ class ReglaTransformacion(ABC):
         pass
 
     def encontrar_numeros_partitura(self, partitura: str) -> list:
-        pass
+            return [
+                (i, c)
+                for i, c in enumerate(partitura)
+                if not c.isascii()
+            ]
 
     def encontrar_caracteres_invalidos(self, partitura: str) -> list:
         pass
