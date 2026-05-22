@@ -31,11 +31,41 @@ class ReglaTransformacion(ABC):
         pass
 
 class ReglaTransposicion(ReglaTransformacion):
-    pass
+    def __init__ (self, token: int):
+        super().__init__(token)
+    def transformar(self, partitura: str) -> str:
+        pass
 
+    def revertir(self, partitura: str) -> str:
+        pass
 
-class ReglaFrecuencia(ReglaTransformacion)
-    pass
+    def partitura_valida(self, partitura: str) -> bool:
+        pass
+
+class ReglaFrecuencia(ReglaTransformacion):
+    def __init__ (self, token: int):
+        super().__init__(token)
+
+    def transformar(self, partitura: str) -> str:
+        pass
+
+    def revertir(self, partitura: str) -> str:
+        pass
+
+    def partitura_valida(self, partitura: str) -> bool:
+        pass
+
 
 class Compositor(ReglaTransformacion):
-    pass
+
+    def __init__ (self, token: int):
+        super().__init__(token)
+
+    def transformar(self, partitura: str) -> str:
+        pass
+
+    def revertir(self, partitura: str) -> str:
+        pass
+
+    def partitura_valida(self, partitura: str) -> bool:
+        pass
