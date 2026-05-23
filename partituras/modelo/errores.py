@@ -1,5 +1,3 @@
-
-
 class ErrorPartitura(Exception):
     pass
 class ContieneNumero(ErrorPartitura):
