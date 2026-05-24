@@ -10,4 +10,6 @@ class LectorPartituras:
         self.ruta_archivo: str = ruta_archivo
 
     def cargar(self) -> list[str]:
+        ...
+
 
