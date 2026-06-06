@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from partituras.modelo.errores import (
     ContieneNumero,
     ContieneCaracterInvalido,
@@ -5,7 +6,8 @@ from partituras.modelo.errores import (
     EspacioMultiple,
     EspacioBordes,
 )
-from abc import ABC, abstractmethod
+NOTAS_VALIDAS = ["do","re","mi","fa","sol","la","si"]
+SIMBOLOS_VALIDOS = ["|","-"]
 
 class ReglaTransformacion(ABC):
 
@@ -28,7 +30,7 @@ class ReglaTransformacion(ABC):
              return [
                 (i, c)
                 for i, c in enumerate(partitura)
-                if not c.isdigit()
+                if c.isdigit()
             ]
 
     def encontrar_caracteres_invalidos(self, partitura: str) -> list:
@@ -40,37 +42,15 @@ class ReglaTransformacion(ABC):
 
 class ReglaTransposicion(ReglaTransformacion):
 
-
     def __init__ (self, token: int):
         super().__init__(token)
 
     def partitura_valida(self, partitura: str) -> bool:
-        NOTAS_VALIDAS = ["do", "re", "mi", "fa", "sol", "la", "si"]
-        SIMBOLOS_VALIDOS = ["|", "-"]
         errores = []
         partitura = partitura.lower()
 
-        #validar caracteres:
-        # for i, c in enumerate(partitura):
-        #     if c.isdigit():
-        #         raise ContieneNumero(
-        #             f"La partitura contiene un número en la posición: {i}: {c}"
-        #             )
-        #     elif not c.isascii():
-        #         raise ContieneCaracterInvalido(
-        #             f"caracter inválido en la posición {i}: {c}"
-        #            )
-        numeros = [
-            (i, c)
-            for (i, c) in enumerate(partitura)
-            if c.isdigit()
-            ]
-
-        ascii_invalidos = [
-            (i, c)
-            for (i, c) in enumerate(partitura)
-            if not c.isascii()
-            ]
+        numeros = self.encontrar_numeros_partitura(partitura)
+        ascii_invalidos = self.encontrar_caracteres_invalidos(partitura)
 
         if numeros:
             mensaje = ",".join(
@@ -81,7 +61,6 @@ class ReglaTransposicion(ReglaTransformacion):
             errores.append(
                 ContieneNumero(mensaje)
             )
-
 
         if ascii_invalidos:
             mensaje = ",".join(
@@ -128,56 +107,128 @@ class ReglaTransposicion(ReglaTransformacion):
         return True
 
     def transformar(self, partitura: str) -> str:
-        self.partitura_valida(partitura) #verifica que la partitura sea valida
+        self.partitura_valida(partitura)
         partitura = partitura.lower()
 
-        partitura = partitura.strip()
+        tokens = partitura.split()
 
-        numeros = [
-            (i, c)
-            for (i, c) in enumerate(partitura)
-            if c.isdigit()
-        ]
-        if numeros:
-            mensaje = ",".join(
-                f"la partitura contiene numeros en la posición {i}: {c}"
-                for i, c in numeros
-            )
-            raise ContieneNumero(mensaje)
+        resultado = []
 
+        for t in tokens:
+            if t in NOTAS_VALIDAS:
+                resultado.append(
+                    NOTAS_VALIDAS[(NOTAS_VALIDAS.index(t) + self.token) % len(NOTAS_VALIDAS)]
+                )
+            else:
+                resultado.append(t)
 
-
-
-
-
-
-
-
+        return " ".join(resultado)
 
     def revertir(self, partitura: str) -> str:
-        pass
+        self.partitura_valida(partitura)
+        partitura = partitura.lower()
+
+        tokens = partitura.split()
+
+        resultado = []
+
+        for t in tokens:
+            if t in NOTAS_VALIDAS:
+                resultado.append(
+                    NOTAS_VALIDAS[(NOTAS_VALIDAS.index(t) - self.token) % len(NOTAS_VALIDAS)]
+                )
+            else:
+                resultado.append(t)
+
+        return " ".join(resultado)
 
 class ReglaFrecuencia(ReglaTransformacion):
+
     def __init__ (self, token: int):
         super().__init__(token)
 
+    def partitura_valida(self, partitura: str) -> bool:
+        errores = []
+        partitura = partitura.lower()
+
+        numeros = self.encontrar_numeros_partitura(partitura)
+        invalidos = self.encontrar_caracteres_invalidos(partitura)
+
+        if numeros:
+            mensaje = ",".join(
+                f"la partitura contiene numeros en: {i}: {c}"
+                for (i,c) in numeros
+            )
+            errores.append(
+                ContieneNumero(mensaje)
+            )
+        if invalidos:
+            mensaje = ",".join(
+                f"existen caracteres inválidos en: {i}: {c}"
+                for (i,c) in invalidos
+            )
+            errores.append(
+                ContieneCaracterInvalido(mensaje)
+            )
+
+        tokens = partitura.split()
+        invalidos = [
+            (i,token)
+            for (i,token) in enumerate(tokens)
+            if token not in NOTAS_VALIDAS
+        ]
+        if invalidos:
+            mensaje = ",".join(
+                f"existen caracteres inválidos en: {i}: {token}"
+                for (i, token) in invalidos
+            )
+            errores.append(
+                ContieneCaracterInvalido(mensaje)
+            )
+
+        if partitura.startswith(" ") or partitura.endswith(" "):
+            errores.append(EspacioBordes("Espacios al inicio o al final"))
+
+        if "  " in partitura:
+            errores.append(EspacioMultiple("Espacios múltiples"))
+
+        if errores:
+            raise ExceptionGroup(
+                "Errores en la partitura", errores
+            )
+        return True
+
     def transformar(self, partitura: str) -> str:
-        pass
+        self.partitura_valida(partitura)
+        return partitura
 
     def revertir(self, partitura: str) -> str:
-        pass
+        self.partitura_valida(partitura)
+        return partitura
 
-    def partitura_valida(self, partitura: str) -> bool:
-        pass
 
 
 class Compositor:
 
+    def __init__ (self, interprete: ReglaTransformacion ):
+        self.interprete = interprete
+
     def transformar(self, partitura: str) -> str:
-        pass
+        return self.interprete.transformar(partitura)
 
     def revertir(self, partitura: str) -> str:
-        pass
+        return self.interprete.revertir(partitura)
 
-    def partitura_valida(self, partitura: str) -> bool:
+    def compositor(self, interprete: ReglaTransformacion):
+        self.partitura_valida(interprete)
+        return interprete
+
+
+class LectorPartituras:
+    def __init__(self, ruta_archivo: str):
+        self.ruta_archivo: str = ruta_archivo
+
+    def cargar (self) -> list[str]:
+        pass
+    def procesar_con (self, compositor: Compositor) -> list[dict]:
         pass
