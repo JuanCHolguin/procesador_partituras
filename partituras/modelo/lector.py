@@ -23,7 +23,6 @@ class LectorPartituras:
 
     def procesar_con(self, compositor: Compositor) -> list[dict]:
         partituras = self.cargar()
-
         return [
             self._procesar_una(p, compositor)
             for p in partituras
